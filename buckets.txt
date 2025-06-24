@@ -1,0 +1,3 @@
+websites.bucket
+video.transcripts.bucket
+onlinebooks.bucket

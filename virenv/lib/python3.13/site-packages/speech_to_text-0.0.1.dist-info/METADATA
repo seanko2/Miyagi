@@ -1,0 +1,17 @@
+Metadata-Version: 2.0
+Name: speech-to-text
+Version: 0.0.1
+Summary: Speech to Text command using IBM Watson API
+Home-page: http://github.com/rmotr/speech-to-text
+Author: Santiago Basulto
+Author-email: santiago@rmotr.com
+License: MIT
+Download-URL: http://github.com/rmotr/speech-to-text/tarball/0.0.1
+Platform: UNKNOWN
+Requires-Dist: progressbar
+Requires-Dist: click (==6.7)
+Requires-Dist: watson-developer-cloud (==0.25.1)
+
+UNKNOWN
+
+

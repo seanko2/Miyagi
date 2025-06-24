@@ -1,0 +1,8 @@
+boto3
+lancedb
+pyarrow
+speechrecognition
+speech-to-text
+langchain-community
+langchain-huggingface
+huggingface_hub
