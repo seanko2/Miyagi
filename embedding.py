@@ -7,13 +7,12 @@ import pyarrow as pa
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
-
+from dotenv import load_dotenv
 #README: this file is store the vector embeddings of the data I scraped and send to S3 bucket
 
-
+load_dotenv()
 #HuggingFace token 
-hf_token = "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"
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = hf_token
+hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 
 embedding_model = 'sentence-transformers/all-MiniLM-L6-v2'
 embeddings = HuggingFaceEmbeddings(model_name= embedding_model, model_kwargs={'device': 'cpu'})

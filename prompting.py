@@ -5,7 +5,7 @@ import speech_to_text as st
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import LanceDB
 from huggingface_hub import InferenceClient
-
+from dotenv import load_dotenv
 
 #Chat Prompt Template offers better conversation flow capabilities and have roles which is applicable to this use case
 from langchain_core.prompts import ChatPromptTemplate
@@ -27,8 +27,10 @@ db = lancedb.connect(
     "aws_secret_access_key": aws_secret_key,
     "region": "us-east-1"
     })
+
+load_dotenv()
 #HuggingFace token 
-hf_token = "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"
+hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = hf_token
 
 embedding_model = 'sentence-transformers/all-MiniLM-L6-v2'
@@ -38,10 +40,15 @@ embeddings = HuggingFaceEmbeddings(model_name= embedding_model, model_kwargs={'d
 def retrieve(query):
     table = "embeddings_tbl"
 
+    print(db)
+    print(embeddings)
+
+
     #this is an easy way that abstracts the need to embed query yourself and retrieve docuemnts
     vector_store = LanceDB(connection=db, table_name=table, embedding= embeddings)
+    print("Row count:", vector_store._table.to_arrow().num_rows)
     retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 3})
-
+    print("retriever", retriever)
     #getting relevant documents here
     retrieved_docs = retriever.invoke(query)
     

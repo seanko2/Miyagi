@@ -6,3 +6,5 @@ speech-to-text
 langchain-community
 langchain-huggingface
 huggingface_hub
+pyaudio
+sentence-transformers
