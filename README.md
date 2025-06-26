@@ -25,7 +25,7 @@ Gather a lot of urls (manually) of websites, youtube videos, Ebooks and scrape t
 which made this process SUPER tedious but the data is ensured be to of high quality. A lot of websites blocked crawler made this process more manual. 
 
 Packages I used:
-BeautifulSoup (website specific. Documentation: https://beautiful-soup-4.readthedocs.io/en/latest/)
+BeautifulSoup (website specific. Documentation: https://beautiful-soup-4.readthedocs.io/en/latest/)\n
 requests
 re
 PYPDF2 (Ebook specific. Documentation: https://pypdf2.readthedocs.io/en/3.x/)
