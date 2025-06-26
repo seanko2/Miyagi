@@ -14,7 +14,7 @@ are usually paid and can be a big financial obstacle for some. I want to remove 
 6. Limitations
 
 
-###Data Collection
+### Data Collection
 I knew there are information scattered online about how to nail behaviorial interview and best practices like the STAR Method. However, I wanted Miyagi to specialize in
 this field and consolidate all those information in one through Youtube, websites, and also Ebooks. I want to preface that maybe the strong LLM models that are out there already have
 trained on those documents. However, I am using a smaller model (more on that later) and did not want to risk any hallucinations, which motivated me to build RAG system 
