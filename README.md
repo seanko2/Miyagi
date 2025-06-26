@@ -24,7 +24,7 @@ Method:
 Gather a lot of urls (manually) of websites, youtube videos, Ebooks and scrape the text from them. Then store it into a .txt file in AWS. I hand picked these websites
 which made this process SUPER tedious but the data is ensured be to of high quality. A lot of websites blocked crawler made this process more manual. 
 
-Packages I used:
+Packages I used: <br />
 BeautifulSoup (website specific. Documentation: https://beautiful-soup-4.readthedocs.io/en/latest/) <br />
 requests <br />
 re <br />
