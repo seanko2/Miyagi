@@ -40,9 +40,11 @@ boto3 <br />
 
 (insert a drawing here maybe)
 Method: <br />
-The data that is in store in AWS right until this point are all in .txt files. In order for the RAG/ LLM model to do something meaningful with the data, it needs to be vectorized i.e numerically represented. I used **langchain_text_splitters** to split each .txt file into chunks. Those chunks were embedded by a Hugging Face model supported by Langchain. The data is held in a **pyarrow** table and stored in **LanceDB** <br />
+The data that is in AWS right until this point are all in .txt files. In order for the RAG/ LLM model to do something meaningful with the data, it needs to be vectorized i.e numerically represented. I used **langchain_text_splitters** to split each .txt file into chunks. Those chunks were embedded by a Hugging Face model supported by Langchain. The data is held in a **pyarrow** table and stored in **LanceDB**. I access the table directly from AWS. <br />
 Model : sentence-transformers/all-MiniLM-L6-v2 <br />
-Documentation: 
+Documentation: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2 <br />
+
+
 
 
 
