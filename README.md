@@ -44,6 +44,9 @@ The data that is in AWS right until this point are all in .txt files. In order f
 Model : sentence-transformers/all-MiniLM-L6-v2 <br />
 Documentation: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2 <br />
 
+### RAG System
+
+
 
 
 
