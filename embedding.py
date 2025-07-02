@@ -42,10 +42,10 @@ def process_file_to_vector(local_path):
     return chunked_data
 
 #aws credentials
-config_data = json.load(open("config.json"))
-
-aws_access_key = config_data["aws_access_key_id"]
-aws_secret_key = config_data["aws_secret_access_key"]
+load_dotenv()
+#aws credentials
+aws_access_key = os.getenv("aws_access_key_id")
+aws_secret_key = os.getenv("aws_secret_access_key")
 
 
 

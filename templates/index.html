@@ -1,0 +1,387 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miyagi - Interview Coach</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #0f202c;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #f8f8f8;
+            margin-bottom: 10px;
+            font-size: 3em;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+        
+        .header p {
+            color: #f8f8f8;
+            font-size: 1.2em;
+            font-weight: 300;
+        }
+        
+        .chat-container {
+            min-height: 80px;
+            max-height: 500px;
+            background: #2d2b27f0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+        
+        .chat-container.expanded {
+            min-height: 300px;
+        }
+        
+        .message {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 12px;
+            animation: fadeIn 0.6s ease-out;
+            line-height: 1.6;
+        }
+        
+        .message:first-child {
+            margin-top: 0;
+        }
+        
+        .message:last-child {
+            margin-bottom: 0;
+        }
+        
+        .message.miyagi {
+            background: #2d2b27f0;
+            border-left: 2px solid #6b7280;
+        }
+        
+        .message.user {
+            background: #3a3a3a;
+            border-left: 3px solid #9ca3af;
+        }
+        
+        .message.question {
+            background: #2d2d2d;
+            border-left: 3px solid #6b7280;
+            font-weight: 400;
+        }
+        
+        .message.feedback {
+            background: #2d2d2d;
+            border-left: 3px solid #6b7280;
+        }
+        
+        .message strong {
+            color: #e0e0e0;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 18px 35px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 400;
+            transition: all 0.3s ease;
+            background: #2d2b27f0;
+            color: #e0e0e0;
+            border: 1px solid #6b7280;
+            min-width: 140px;
+        }
+        
+        .btn:hover {
+            background: #5a5a5a;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            color: #9ca3af;
+            font-size: 1.1em;
+        }
+        
+        .loading-dots {
+            display: inline-block;
+            animation: loadingDots 1.5s infinite;
+        }
+        
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+        
+        @keyframes loadingDots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            80%, 100% { content: ''; }
+        }
+        
+        .recording {
+            background: #5a5a5a !important;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(156, 163, 175, 0.4);
+            }
+            50% { 
+                transform: scale(1.02);
+                box-shadow: 0 0 0 10px rgba(156, 163, 175, 0);
+            }
+        }
+
+        /* Scrollbar styling */
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-container::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #4a4a4a;
+            border-radius: 3px;
+        }
+        
+        .chat-container::-webkit-scrollbar-thumb:hover {
+            background: #5a5a5a;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2.5em;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Miyagi</h1>
+            <p>Personal Interview Coach</p>
+        </div>
+        
+        <div id="chat" class="chat-container">
+            <div class="message miyagi">
+                <strong>Miyagi:</strong> Welcome! Click "Start Interview" to begin your practice session.
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="startBtn" onclick="startInterview()">Start Interview</button>
+            <button class="btn" id="voiceBtn" onclick="startVoiceInput()" style="display: none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                </svg>
+            </button>
+            <button class="btn" id="resetBtn" onclick="resetSession()" style="display: none;">Reset</button>
+        </div>
+        
+        <div id="loading" class="loading">
+            <p>Thinking<span class="loading-dots"></span></p>
+        </div>
+    </div>
+
+    <script>
+        let isRecording = false;
+        let currentState = -1;
+        let messageCount = 0;
+
+        function addMessage(sender, content, type = '') {
+            const chatContainer = document.getElementById('chat');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender.toLowerCase()} ${type}`;
+            messageDiv.innerHTML = `<strong>${sender}:</strong> ${content}`;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Expand chat container after first user interaction
+            messageCount++;
+            if (messageCount > 1) {
+                chatContainer.classList.add('expanded');
+            }
+        }
+
+        function showLoading(show) {
+            const loadingDiv = document.getElementById('loading');
+            loadingDiv.style.display = show ? 'block' : 'none';
+        }
+
+        async function startInterview() {
+            showLoading(true);
+            try {
+                const response = await fetch('/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                addMessage('Miyagi', data.message);
+                currentState = -1;
+                
+                // Show Speak and Reset buttons after starting interview
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('voiceBtn').style.display = 'inline-block';
+                document.getElementById('resetBtn').style.display = 'inline-block';
+            } catch (error) {
+                addMessage('System', 'Error starting interview: ' + error.message);
+            }
+            showLoading(false);
+        }
+
+        async function startVoiceInput() {
+            const voiceBtn = document.getElementById('voiceBtn');
+            
+            if (isRecording) return;
+            
+            isRecording = true;
+            voiceBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; filter: brightness(1.5);">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>`;
+            voiceBtn.classList.add('recording');
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/voice_input', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    addMessage('System', 'Voice input error: ' + data.error);
+                } else {
+                    addMessage('You', `${data.transcription}`);
+                    const messageType = data.type === 'question' ? 'question' : 'feedback';
+                    addMessage('Miyagi', data.response, messageType);
+                    currentState = data.state;
+                }
+            } catch (error) {
+                addMessage('System', 'Voice input error: ' + error.message);
+            }
+            
+            isRecording = false;
+            voiceBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; filter: brightness(1.5);">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>`;
+            voiceBtn.classList.remove('recording');
+            showLoading(false);
+        }
+
+        async function resetSession() {
+            showLoading(true);
+            try {
+                const response = await fetch('/reset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                const chatContainer = document.getElementById('chat');
+                chatContainer.innerHTML = `
+                    <div class="message miyagi">
+                        <strong>Miyagi:</strong> Session reset! Ready to start fresh.
+                    </div>
+                `;
+                chatContainer.classList.remove('expanded');
+                messageCount = 1;
+                currentState = -1;
+                
+                // Hide Speak and Reset buttons, show Start Interview button
+                document.getElementById('startBtn').style.display = 'inline-block';
+                document.getElementById('voiceBtn').style.display = 'none';
+                document.getElementById('resetBtn').style.display = 'none';
+            } catch (error) {
+                addMessage('System', 'Reset error: ' + error.message);
+            }
+            showLoading(false);
+        }
+
+        // Initialize the interface
+        window.onload = function() {
+            currentState = -1;
+            messageCount = 1; // Start with welcome message
+            
+            // Ensure voice button has correct SVG icon
+            const voiceBtn = document.getElementById('voiceBtn');
+            voiceBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>`;
+        };
+    </script>
+</body>
+</html>

@@ -2,7 +2,7 @@ import speech_recognition as sr
 
 #README: this file is contains the function in which users can talk to chatbot
 
-def listen_n_transcribe(prompt = "Ask me something!"):
+def listen_n_transcribe():
     r = sr.Recognizer()
     mic = sr.Microphone()
 
@@ -11,7 +11,7 @@ def listen_n_transcribe(prompt = "Ask me something!"):
         r.adjust_for_ambient_noise(source)
         r.pause_threshold = 2.0
         r.non_speaking_duration = 1.0
-        print(prompt)
+        
     
         try:
             audio = r.listen(source, timeout= 5)
