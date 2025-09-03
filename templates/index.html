@@ -1,5 +1,4 @@
-
-<!DOCTYPE html>
+<!DOCTYPE html>  
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -129,6 +128,14 @@
             transform: translateY(0);
         }
         
+        .btn:disabled {
+            background: #3a3a3a;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
         .loading {
             display: none;
             text-align: center;
@@ -160,20 +167,28 @@
             80%, 100% { content: ''; }
         }
         
-        .recording {
-            background: #5a5a5a !important;
+        .listening {
+            background: #6b7280 !important;
+            color: white !important;
             animation: pulse 1.5s infinite;
         }
         
         @keyframes pulse {
             0%, 100% { 
                 transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(156, 163, 175, 0.4);
+                opacity: 0.8;
             }
             50% { 
                 transform: scale(1.02);
-                box-shadow: 0 0 0 10px rgba(156, 163, 175, 0);
+                opacity: 1;
             }
+        }
+
+        .speech-status {
+            text-align: center;
+            margin-top: 10px;
+            color: #9ca3af;
+            font-size: 0.9em;
         }
 
         /* Scrollbar styling */
@@ -215,6 +230,16 @@
                 max-width: 300px;
             }
         }
+
+        .browser-warning {
+            background: #dc2626;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -222,6 +247,11 @@
         <div class="header">
             <h1>Miyagi</h1>
             <p>Personal Interview Coach</p>
+        </div>
+
+        <div id="browserWarning" class="browser-warning">
+            <strong>Speech Recognition Issue:</strong> This feature requires microphone permissions and a supported browser (Chrome, Edge, Safari). 
+            <br><small>Make sure you're using HTTPS or localhost, and click "Allow" when prompted for microphone access.</small>
         </div>
         
         <div id="chat" class="chat-container">
@@ -233,16 +263,16 @@
         <div class="controls">
             <button class="btn" id="startBtn" onclick="startInterview()">Start Interview</button>
             <button class="btn" id="voiceBtn" onclick="startVoiceInput()" style="display: none;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;">
-                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                </svg>
+                Answer
             </button>
+            <button class="btn" id="nextBtn" onclick="nextQuestion()" style="display: none;">Next Question</button>
             <button class="btn" id="resetBtn" onclick="resetSession()" style="display: none;">Reset</button>
         </div>
         
+        <div class="speech-status" id="speechStatus"></div>
+        
         <div id="loading" class="loading">
-            <p>Thinking<span class="loading-dots"></span></p>
+            <p>Thinking...<span class="loading-dots"></span></p>
         </div>
     </div>
 
@@ -250,6 +280,175 @@
         let isRecording = false;
         let currentState = -1;
         let messageCount = 0;
+        let recognition = null;
+        let speechSupported = false;
+
+        // Check if page is served over HTTPS or localhost
+        function isSecureContext() {
+            return window.location.protocol === 'https:' || 
+                   window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1' ||
+                   window.location.hostname === '';
+        }
+
+        // Initialize speech recognition with comprehensive diagnostics
+        function initSpeechRecognition() {
+            console.log('Initializing speech recognition...');
+            console.log('Browser:', navigator.userAgent);
+            console.log('Protocol:', window.location.protocol);
+            console.log('Hostname:', window.location.hostname);
+            
+            // Check HTTPS requirement
+            if (!isSecureContext()) {
+                console.error('Speech recognition requires HTTPS or localhost');
+                addMessage('System', 'Speech recognition requires a secure connection (HTTPS). Please access this page via HTTPS or localhost.');
+                showBrowserWarning();
+                return false;
+            }
+            
+            try {
+                // Check for speech recognition support with detailed logging
+                console.log('Checking for SpeechRecognition support...');
+                console.log('window.SpeechRecognition:', typeof window.SpeechRecognition);
+                console.log('window.webkitSpeechRecognition:', typeof window.webkitSpeechRecognition);
+                
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                
+                if (!SpeechRecognition) {
+                    console.log('Speech recognition not supported in this browser');
+                    addMessage('System', 'Speech recognition is not supported in this browser. Try Chrome, Edge, or Safari.');
+                    showBrowserWarning();
+                    return false;
+                }
+                
+                console.log('Creating SpeechRecognition instance...');
+                recognition = new SpeechRecognition();
+                
+                // Configure recognition settings
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+                recognition.maxAlternatives = 1;
+                
+                console.log('Recognition configured with settings:', {
+                    continuous: recognition.continuous,
+                    interimResults: recognition.interimResults,
+                    lang: recognition.lang,
+                    maxAlternatives: recognition.maxAlternatives
+                });
+                
+                recognition.onstart = function() {
+                    console.log('Speech recognition started successfully');
+                    document.getElementById('speechStatus').textContent = 'Listening... Speak clearly into your microphone.';
+                    isRecording = true;
+                };
+                
+                recognition.onresult = function(event) {
+                    console.log('Speech recognition result received');
+                    console.log('Event results:', event.results);
+                    
+                    if (event.results.length > 0) {
+                        const transcript = event.results[0][0].transcript.trim();
+                        const confidence = event.results[0][0].confidence;
+                        
+                        console.log('Transcript:', transcript, 'Confidence:', confidence);
+                        
+                        if (transcript.length > 0) {
+                            addMessage('You', transcript);
+                            
+                            // Send transcript to server for feedback
+                            showLoading(true);
+                            fetch('/process_speech_text', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({text: transcript})
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.error) {
+                                    addMessage('System', 'Error: ' + data.error);
+                                } else {
+                                    addMessage('Miyagi', data.response, 'feedback');
+                                    currentState = data.state;
+                                    updateButtonVisibility();
+                                }
+                                showLoading(false);
+                            })
+                            .catch(error => {
+                                console.error('Error processing speech:', error);
+                                addMessage('System', 'Error processing speech: ' + error.message);
+                                showLoading(false);
+                            });
+                        } else {
+                            addMessage('System', 'No speech detected. Please try again.');
+                        }
+                    }
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error('Speech recognition error:', event.error);
+                    console.error('Full error event:', event);
+                    
+                    let errorMessage = 'Speech recognition error: ';
+                    
+                    switch(event.error) {
+                        case 'no-speech':
+                            errorMessage += 'No speech detected. Please try speaking more clearly.';
+                            break;
+                        case 'audio-capture':
+                            errorMessage += 'Microphone not found or not working. Please check your microphone.';
+                            break;
+                        case 'not-allowed':
+                            errorMessage += 'Microphone permission denied. Please click the microphone icon in your browser\'s address bar and allow access.';
+                            break;
+                        case 'network':
+                            errorMessage += 'Network error. Please check your internet connection.';
+                            break;
+                        case 'service-not-allowed':
+                            errorMessage += 'Speech service not allowed. This may be due to browser security settings or network restrictions.';
+                            break;
+                        case 'bad-grammar':
+                            errorMessage += 'Grammar error in speech recognition.';
+                            break;
+                        case 'language-not-supported':
+                            errorMessage += 'Language not supported.';
+                            break;
+                        default:
+                            errorMessage += `${event.error}. Please try again or use a different browser.`;
+                    }
+                    
+                    addMessage('System', errorMessage);
+                    document.getElementById('speechStatus').textContent = '';
+                };
+                
+                recognition.onend = function() {
+                    console.log('Speech recognition ended');
+                    isRecording = false;
+                    const voiceBtn = document.getElementById('voiceBtn');
+                    voiceBtn.innerHTML = 'Answer';
+                    voiceBtn.classList.remove('listening');
+                    voiceBtn.disabled = false;
+                    document.getElementById('speechStatus').textContent = '';
+                };
+                
+                // Test if we can create the recognition object
+                console.log('Speech recognition initialized successfully');
+                speechSupported = true;
+                return true;
+                
+            } catch (error) {
+                console.error('Error initializing speech recognition:', error);
+                addMessage('System', `Failed to initialize speech recognition: ${error.message}`);
+                showBrowserWarning();
+                return false;
+            }
+        }
+
+        function showBrowserWarning() {
+            document.getElementById('browserWarning').style.display = 'block';
+        }
 
         function addMessage(sender, content, type = '') {
             const chatContainer = document.getElementById('chat');
@@ -271,6 +470,39 @@
             loadingDiv.style.display = show ? 'block' : 'none';
         }
 
+        function updateButtonVisibility() {
+            const startBtn = document.getElementById('startBtn');
+            const voiceBtn = document.getElementById('voiceBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            
+            // Reset state: show only start button
+            if (currentState === 0) {
+                startBtn.style.display = 'inline-block';
+                voiceBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+                resetBtn.style.display = 'none';
+            } 
+            // After feedback: show next question and reset
+            else if (currentState === -1) {
+                startBtn.style.display = 'none';
+                voiceBtn.style.display = 'none';
+                nextBtn.style.display = 'inline-block';
+                resetBtn.style.display = 'inline-block';
+            } 
+            // After question: show answer and reset
+            else if (currentState === 1) {
+                startBtn.style.display = 'none';
+                voiceBtn.style.display = speechSupported ? 'inline-block' : 'none';
+                nextBtn.style.display = 'none';
+                resetBtn.style.display = 'inline-block';
+                
+                if (!speechSupported) {
+                    addMessage('System', 'Speech recognition is not available. Please type your answer or try a different browser.');
+                }
+            }
+        }
+
         async function startInterview() {
             showLoading(true);
             try {
@@ -282,34 +514,20 @@
                 });
                 
                 const data = await response.json();
-                addMessage('Miyagi', data.message);
-                currentState = -1;
-                
-                // Show Speak and Reset buttons after starting interview
-                document.getElementById('startBtn').style.display = 'none';
-                document.getElementById('voiceBtn').style.display = 'inline-block';
-                document.getElementById('resetBtn').style.display = 'inline-block';
+                addMessage('Miyagi', data.message, 'question');
+                currentState = data.state;
+                updateButtonVisibility();
             } catch (error) {
+                console.error('Error starting interview:', error);
                 addMessage('System', 'Error starting interview: ' + error.message);
             }
             showLoading(false);
         }
 
-        async function startVoiceInput() {
-            const voiceBtn = document.getElementById('voiceBtn');
-            
-            if (isRecording) return;
-            
-            isRecording = true;
-            voiceBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; filter: brightness(1.5);">
-                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-            </svg>`;
-            voiceBtn.classList.add('recording');
+        async function nextQuestion() {
             showLoading(true);
-            
             try {
-                const response = await fetch('/voice_input', {
+                const response = await fetch('/next_question', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -317,26 +535,109 @@
                 });
                 
                 const data = await response.json();
-                
-                if (data.error) {
-                    addMessage('System', 'Voice input error: ' + data.error);
-                } else {
-                    addMessage('You', `${data.transcription}`);
-                    const messageType = data.type === 'question' ? 'question' : 'feedback';
-                    addMessage('Miyagi', data.response, messageType);
-                    currentState = data.state;
-                }
+                addMessage('Miyagi', data.response, 'question');
+                currentState = data.state;
+                updateButtonVisibility();
             } catch (error) {
-                addMessage('System', 'Voice input error: ' + error.message);
+                console.error('Error getting next question:', error);
+                addMessage('System', 'Error getting next question: ' + error.message);
+            }
+            showLoading(false);
+        }
+
+        function startVoiceInput() {
+            console.log('Starting voice input...');
+            console.log('Current recording state:', isRecording);
+            console.log('Current app state:', currentState);
+            console.log('Speech supported:', speechSupported);
+            
+            if (isRecording) {
+                console.log('Already recording, ignoring request');
+                return;
             }
             
-            isRecording = false;
-            voiceBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; filter: brightness(1.5);">
-                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-            </svg>`;
-            voiceBtn.classList.remove('recording');
-            showLoading(false);
+            // Check if we're in the correct state for voice input
+            if (currentState !== 1) {
+                addMessage('System', 'Voice input is only available after a question is asked.');
+                return;
+            }
+            
+            if (!recognition || !speechSupported) {
+                addMessage('System', 'Speech recognition is not supported in this browser. Please try Chrome, Firefox, Safari, or Edge.');
+                return;
+            }
+            
+            // Check for microphone permissions first
+            console.log('Checking microphone permissions...');
+            
+            // Try to get microphone permission using different methods
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                console.log('Using navigator.mediaDevices.getUserMedia');
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(function(stream) {
+                        console.log('Microphone access granted');
+                        // Stop the stream immediately after getting permission
+                        stream.getTracks().forEach(track => {
+                            console.log('Stopping track:', track);
+                            track.stop();
+                        });
+                        
+                        startSpeechRecognition();
+                    })
+                    .catch(function(error) {
+                        console.error('Microphone access error:', error);
+                        handleMicrophoneError(error);
+                    });
+            } else {
+                console.log('getUserMedia not available, trying direct speech recognition');
+                // Fallback: try speech recognition directly
+                startSpeechRecognition();
+            }
+        }
+        
+        function handleMicrophoneError(error) {
+            let errorMessage = 'Microphone access error: ';
+            
+            switch(error.name) {
+                case 'NotAllowedError':
+                    errorMessage += 'Permission denied. Please click the microphone icon in your browser\'s address bar and allow access, then try again.';
+                    break;
+                case 'NotFoundError':
+                    errorMessage += 'No microphone found. Please check that a microphone is connected.';
+                    break;
+                case 'NotReadableError':
+                    errorMessage += 'Microphone is already in use by another application.';
+                    break;
+                default:
+                    errorMessage += error.message || 'Unknown error. Please try again.';
+            }
+            
+            addMessage('System', errorMessage);
+        }
+        
+        function startSpeechRecognition() {
+            console.log('Starting speech recognition...');
+            
+            // Update button state
+            const voiceBtn = document.getElementById('voiceBtn');
+            voiceBtn.innerHTML = 'Listening...';
+            voiceBtn.classList.add('listening');
+            voiceBtn.disabled = true;
+            
+            // Start speech recognition with error handling
+            try {
+                console.log('Calling recognition.start()...');
+                recognition.start();
+                console.log('Recognition.start() called successfully');
+            } catch (error) {
+                console.error('Error starting recognition:', error);
+                addMessage('System', 'Error starting speech recognition: ' + error.message + '. Try refreshing the page.');
+                
+                // Reset button state
+                voiceBtn.innerHTML = 'Answer';
+                voiceBtn.classList.remove('listening');
+                voiceBtn.disabled = false;
+            }
         }
 
         async function resetSession() {
@@ -353,18 +654,15 @@
                 const chatContainer = document.getElementById('chat');
                 chatContainer.innerHTML = `
                     <div class="message miyagi">
-                        <strong>Miyagi:</strong> Session reset! Ready to start fresh.
+                        <strong>Miyagi:</strong> Session reset! Click "Start Interview" to begin your practice session.
                     </div>
                 `;
                 chatContainer.classList.remove('expanded');
                 messageCount = 1;
-                currentState = -1;
-                
-                // Hide Speak and Reset buttons, show Start Interview button
-                document.getElementById('startBtn').style.display = 'inline-block';
-                document.getElementById('voiceBtn').style.display = 'none';
-                document.getElementById('resetBtn').style.display = 'none';
+                currentState = 0; // Set to initial state, not -1
+                updateButtonVisibility();
             } catch (error) {
+                console.error('Reset error:', error);
                 addMessage('System', 'Reset error: ' + error.message);
             }
             showLoading(false);
@@ -372,15 +670,17 @@
 
         // Initialize the interface
         window.onload = function() {
-            currentState = -1;
-            messageCount = 1; // Start with welcome message
+            currentState = 0; // Initial state
+            messageCount = 1;
+            updateButtonVisibility();
             
-            // Ensure voice button has correct SVG icon
-            const voiceBtn = document.getElementById('voiceBtn');
-            voiceBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;">
-                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-            </svg>`;
+            // Initialize speech recognition
+            if (!initSpeechRecognition()) {
+                console.log('Speech recognition not supported');
+                document.getElementById('speechStatus').textContent = 'Speech recognition not supported in this browser';
+            } else {
+                console.log('Speech recognition initialized successfully');
+            }
         };
     </script>
 </body>

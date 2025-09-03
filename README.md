@@ -47,6 +47,9 @@ Documentation: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2 <br
 ### RAG System
 
 
+### FrontEND
+Jinja2 : Flask default templating
+
 
 
 
