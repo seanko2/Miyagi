@@ -13,9 +13,20 @@ application.secret_key = os.urandom(24)
 #README: This is for user prompting and retrieiving relevant documents from RAG to feed into LLM
 #This is the engine of Miyagi
 
-# Replace your current env loading with:
-import os
-from dotenv import load_dotenv
+#so that hugging face has permission for my cache direcotires 
+cache_dir = "/app/.cache/huggingface"
+os.makedirs(cache_dir, exist_ok=True)
+os.environ["HF_HOME"] = cache_dir
+os.environ["TRANSFORMERS_CACHE"] = cache_dir
+os.environ["HF_DATASETS_CACHE"] = cache_dir
+
+# Your existing embedding model code
+embedding_model = 'sentence-transformers/all-MiniLM-L6-v2'
+embeddings = HuggingFaceEmbeddings(
+    model_name=embedding_model, 
+    model_kwargs={'device': 'cpu'},
+    cache_folder=cache_dir  # Explicitly set cache folder
+)
 
 # Load .env only in development
 if os.environ.get('FLASK_ENV') != 'production':
