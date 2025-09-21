@@ -14,7 +14,7 @@ application.secret_key = os.urandom(24)
 #This is the engine of Miyagi
 
 #so that hugging face has permission for my cache direcotires 
-cache_dir = "/app/.cache/huggingface"
+cache_dir = os.path.join("/tmp", ".cache", "huggingface")
 os.makedirs(cache_dir, exist_ok=True)
 os.environ["HF_HOME"] = cache_dir
 os.environ["TRANSFORMERS_CACHE"] = cache_dir
@@ -55,12 +55,9 @@ hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = hf_token
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-embedding_model = 'sentence-transformers/all-MiniLM-L6-v2'
-embeddings = HuggingFaceEmbeddings(model_name= embedding_model, model_kwargs={'device': 'cpu'})
-
 #this section is copied from huggingface model card --> deploy --> inference provider
 client = InferenceClient(
-    provider="auto",
+    provider="featherless-ai",
     api_key= hf_token,
 )
 
@@ -94,7 +91,7 @@ def generate_question(user_input, relevant_documents):
             "role": "system",
             "content": (
                 "You are a job interview coach. Generate using relevant documents and ask the user using second person a *single*, *concise* sample behavioral interview question. "
-                "provide *only* the question itself and nothing else except the question"
+                "provide *only* the *question* itself and nothing else except the question"
             )
         },
         {
@@ -105,13 +102,13 @@ def generate_question(user_input, relevant_documents):
     
     try:
         completion = client.chat.completions.create(
-            model="HuggingFaceH4/zephyr-7b-beta",
+            model="mistralai/Mistral-7B-Instruct-v0.2",
             messages=message,
             max_tokens=80,
             temperature=0.5,
         )
         
-        # Add debugging and error handling
+        # debugging and error handling
         print(f"Completion response: {completion}")
         
         if completion and hasattr(completion, 'choices') and completion.choices:
@@ -147,7 +144,7 @@ def provide_feedback(user_input, relevant_documents, question):
     
     try:
         completion = client.chat.completions.create(
-            model="HuggingFaceH4/zephyr-7b-beta",
+            model="mistralai/Mistral-7B-Instruct-v0.2",
             messages=message,
             max_tokens=600,
             temperature=0.55,
@@ -155,6 +152,7 @@ def provide_feedback(user_input, relevant_documents, question):
         
         print(f"Feedback completion response: {completion}")
         
+        #defaults
         if completion and hasattr(completion, 'choices') and completion.choices:
             return completion.choices[0].message.content
         else:
@@ -178,7 +176,7 @@ def home():
 def start_interview():
     """Start the interview process and immediately generate first question"""
     try:
-        session['state'] = 1  # Set to feedback mode since we're about to ask a question
+        session['state'] = 1  # Set to listening mode since we're about to ask a question
         session['current_question'] = ""
         
         # Generate first question immediately
