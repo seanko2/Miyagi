@@ -2,10 +2,11 @@
 
 ## Mission
 My mission for this project is to give job seekers FREE access to practice on their behaviorial interview skills. Most interview prep tools that are out there 
-are usually paid and can be a big financial obstacle for some. I want to remove that obstacle for students like me that need practice with interviewing but did not know an easy way to find it.
+are usually paid and can be a big financial obstacle for some. School resources mostly include clubs that you need to interview for ( a bit circular thinking if you ask me). I want to remove that obstacle for students like me that need practice with interviewing but did not know an easy way to find it.
 
 
 ## Structure
+0. How to Use
 1. Data Collection
 2. Data Embedding
 3. RAG System
@@ -13,6 +14,10 @@ are usually paid and can be a big financial obstacle for some. I want to remove 
 5. Chat Model
 6. Limitations
 
+### How to Use 
+Clone environment 
+pip install requirements.txt
+python 
 
 ### Data Collection
 Packages I used: <br />
@@ -40,16 +45,34 @@ boto3 <br />
 
 (insert a drawing here maybe)
 Method: <br />
-The data that is in AWS right until this point are all in .txt files. In order for the RAG/ LLM model to do something meaningful with the data, it needs to be vectorized i.e numerically represented. I used **langchain_text_splitters** to split each .txt file into chunks. Those chunks were embedded by a Hugging Face model supported by Langchain. The data is held in a **pyarrow** table and stored in **LanceDB**. I access the table directly from AWS. <br />
+The data that is in AWS right until this point are all in .txt files. In order for the RAG/ LLM model to do something meaningful with the data, it needs to be vectorized i.e numerically represented. I used **langchain_text_splitters** to split each .txt file into chunks. Those chunks were embedded by a Hugging Face model supported by Langchain. The data is held in a **pyarrow** table and stored in **LanceDB**. I access the table directly from AWS through table called "embeddings_tbl". <br />
 Model : sentence-transformers/all-MiniLM-L6-v2 <br />
 Documentation: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2 <br />
 
 ### RAG System
+Packages I used <br />
+LanceDB <br />
+
+##### application.py/retrieve <br />
+Using LanceDB was advantageous because retreiving from "embeddings_tbl" was really simple. I used the built-in function as_retriever(search_type="similarity", search_kwargs={"k": 3}) to retrieve relevant documents. <br />
+
+##### application.py/process_documents
+The retrieval process from invoke returns a list custom Document object. I want to process the documents into a string format to make feeding to the Large language model possible.
+
+
+### Voice Mode
+I initially had a speech_to_text.py that worked on my local machine but was slow and was not supported by the browser. I then used the basic browser speech recognition API. This is definitely an area of improvement because the browser speech recognition is faulty and can sometimes only get a piece of user input. <br />
+
+*The browser API is also not compatible with Safari but Google Chrome works.*
+
+
+### Chat Model
 
 
 ### FrontEND
 Jinja2 : Flask default templating
-
+Basic HTML 
+CSS
 
 
 

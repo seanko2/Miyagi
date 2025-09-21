@@ -68,6 +68,8 @@ def retrieve(query):
 
     #this is an easy way that abstracts the need to embed query yourself and retrieve docuemnts
     vector_store = LanceDB(connection=db, table_name=table, embedding= embeddings)
+
+    #as retriever reutrns a langchain_core.vectorstores.base.VectorStoreRetriever
     retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 3})
     #getting relevant documents here
     retrieved_docs = retriever.invoke(query)
