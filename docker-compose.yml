@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
   miyagi-app:
     build: .
-    ports:
-      - "8888:8888"
+    expose:
+      - "8888"  # Only expose internally, not to host
     environment:
       - FLASK_ENV=production
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
@@ -18,3 +16,19 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - app-network
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://miyagi-app:8888
+    depends_on:
+      miyagi-app:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
